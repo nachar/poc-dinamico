@@ -56,6 +56,7 @@ api.interceptors.request.use(async (config) => {
 });
 
 const products = ref([]);
+const categories = ref([]);
 
 const fetchProducts = async () => {
   try {
@@ -66,7 +67,90 @@ const fetchProducts = async () => {
   }
 };
 
-onMounted(fetchProducts);
+const fetchProductCategories = async () => {
+  try {
+    const { data } = await api.get("/product-categories");
+    categories.value = data?.categories ?? data ?? [];
+  } catch (error) {
+    console.error("Failed to fetch product categories:", error);
+  }
+};
+
+const createOrder = async () => {
+  try {
+    const payload = {
+      order: {
+        comment: "Second demo order with different items",
+        customer: {
+          email: "luis.perez@example.com",
+          phone: "555222333",
+          name: "Luis Perez",
+        },
+        discounts: [
+          {
+            amount: 10,
+          },
+        ],
+        externalId: "order-demo-products-002",
+        items: [
+          {
+            comment: "Arrachera al grill",
+            quantity: 1,
+            price: 215,
+            product: {
+              id: 9,
+            },
+            subitems: [],
+          },
+          {
+            comment: "Capuccino",
+            quantity: 1,
+            price: 30,
+            product: {
+              id: 5,
+            },
+            subitems: [],
+          },
+          {
+            comment: "Cerveza",
+            quantity: 2,
+            price: 30,
+            product: {
+              id: 6,
+            },
+            subitems: [],
+          },
+        ],
+        payment: {
+          paymentMethod: {
+            id: 3,
+          },
+          total: 325,
+        },
+        shippingCost: 0,
+        type: "delivery",
+        typeOptions: {
+          expectedTime: "2026-03-15T21:00:00.000Z",
+          address: "456 Sample Avenue",
+        },
+      },
+    };
+
+    const { data } = await api.post("/orders", payload, {
+      headers: {
+        "content-type": "application/json",
+      },
+    });
+    return data;
+  } catch (error) {
+    console.error("Failed to create order:", error);
+    return null;
+  }
+};
+
+onMounted(async () => {
+  await Promise.all([fetchProducts(), fetchProductCategories()]);
+});
 </script>
 
 <template>
