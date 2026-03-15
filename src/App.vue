@@ -60,8 +60,7 @@ const products = ref([]);
 const fetchProducts = async () => {
   try {
     const { data } = await api.get("/products");
-    products.value = data;
-    console.log("Products:", data);
+    products.value = data.products;
   } catch (error) {
     console.error("Failed to fetch products:", error);
   }
@@ -71,5 +70,5 @@ onMounted(fetchProducts);
 </script>
 
 <template>
-  <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusantium, autem?</p>
+  <p>{{ products }}</p>
 </template>
