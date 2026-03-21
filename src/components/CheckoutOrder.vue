@@ -56,23 +56,31 @@ api.interceptors.request.use(async (config) => {
 });
 
 const products = ref([]);
-const categories = ref([]);
+
+const pickRandomProducts = (list, count) => {
+  const pool = Array.isArray(list) ? [...list] : [];
+  for (let i = pool.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, Math.min(count, pool.length));
+};
 
 const fetchProducts = async () => {
   try {
     const { data } = await api.get("/products");
-    products.value = data.products;
+    const selectedProducts = pickRandomProducts(data?.products ?? [], 3);
+    products.value = selectedProducts.map((product) => ({
+      comment: product.name,
+      quantity: 1,
+      price: product.price,
+      product: {
+        id: product.id,
+      },
+      subitems: [],
+    }));
   } catch (error) {
     console.error("Failed to fetch products:", error);
-  }
-};
-
-const fetchProductCategories = async () => {
-  try {
-    const { data } = await api.get("/product-categories");
-    categories.value = data?.categories ?? data ?? [];
-  } catch (error) {
-    console.error("Failed to fetch product categories:", error);
   }
 };
 
@@ -92,40 +100,15 @@ const createOrder = async () => {
           },
         ],
         externalId: "order-demo-products-002",
-        items: [
-          {
-            comment: "Arrachera al grill",
-            quantity: 1,
-            price: 215,
-            product: {
-              id: 9,
-            },
-            subitems: [],
-          },
-          {
-            comment: "Capuccino",
-            quantity: 1,
-            price: 30,
-            product: {
-              id: 5,
-            },
-            subitems: [],
-          },
-          {
-            comment: "Cerveza",
-            quantity: 2,
-            price: 30,
-            product: {
-              id: 6,
-            },
-            subitems: [],
-          },
-        ],
+        items: products.value,
         payment: {
           paymentMethod: {
             id: 3,
           },
-          total: 325,
+          total: products.value.reduce(
+            (sum, item) => sum + item.price * item.quantity,
+            0
+          ),
         },
         shippingCost: 0,
         type: "delivery",
@@ -149,12 +132,12 @@ const createOrder = async () => {
 };
 
 onMounted(async () => {
-  await Promise.all([fetchProducts(), fetchProductCategories()]);
+  await Promise.all([fetchProducts()]);
 });
 </script>
 
 <template>
-  <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Dolor, reiciendis.</p>
+  <p>{{ products }}</p>
 </template>
 
 <style scoped>
