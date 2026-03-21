@@ -62,6 +62,34 @@ const isPlacingOrder = ref(false);
 const orderError = ref("");
 const orderSuccess = ref(false);
 
+const mockCustomers = [
+  { name: "Alice Johnson", email: "alice.johnson@example.com", phone: "555010001" },
+  { name: "Bruno Silva", email: "bruno.silva@example.com", phone: "555010002" },
+  { name: "Carla Mendes", email: "carla.mendes@example.com", phone: "555010003" },
+  { name: "Daniel Lopez", email: "daniel.lopez@example.com", phone: "555010004" },
+  { name: "Elena Rossi", email: "elena.rossi@example.com", phone: "555010005" },
+  { name: "Farah Khan", email: "farah.khan@example.com", phone: "555010006" },
+  { name: "George Brown", email: "george.brown@example.com", phone: "555010007" },
+  { name: "Hana Kim", email: "hana.kim@example.com", phone: "555010008" },
+  { name: "Ivan Petrov", email: "ivan.petrov@example.com", phone: "555010009" },
+  { name: "Julia Novak", email: "julia.novak@example.com", phone: "555010010" },
+  { name: "Khaled Omar", email: "khaled.omar@example.com", phone: "555010011" },
+  { name: "Lucia Garcia", email: "lucia.garcia@example.com", phone: "555010012" },
+  { name: "Mateo Ruiz", email: "mateo.ruiz@example.com", phone: "555010013" },
+  { name: "Nora Jensen", email: "nora.jensen@example.com", phone: "555010014" },
+  { name: "Omar Haddad", email: "omar.haddad@example.com", phone: "555010015" },
+  { name: "Priya Patel", email: "priya.patel@example.com", phone: "555010016" },
+  { name: "Quinn Taylor", email: "quinn.taylor@example.com", phone: "555010017" },
+  { name: "Rafael Costa", email: "rafael.costa@example.com", phone: "555010018" },
+  { name: "Sofia Martin", email: "sofia.martin@example.com", phone: "555010019" },
+  { name: "Tommy Nguyen", email: "tommy.nguyen@example.com", phone: "555010020" },
+];
+
+const getRandomCustomer = () => {
+  const index = Math.floor(Math.random() * mockCustomers.length);
+  return { ...mockCustomers[index] };
+};
+
 const pickRandomProducts = (list, count) => {
   const pool = Array.isArray(list) ? [...list] : [];
   for (let i = pool.length - 1; i > 0; i -= 1) {
@@ -109,18 +137,14 @@ const createOrder = async () => {
   try {
     const payload = {
       order: {
-        comment: "Second demo order with different items",
-        customer: {
-          email: "luis.perez@example.com",
-          phone: "555222333",
-          name: "Luis Perez",
-        },
+        comment: crypto.randomUUID(),
+        customer: getRandomCustomer(),
         discounts: [
           {
             amount: 10,
           },
         ],
-        externalId: "order-demo-products-002",
+        externalId: crypto.randomUUID(),
         items: products.value,
         payment: {
           paymentMethod: {
@@ -132,7 +156,7 @@ const createOrder = async () => {
         type: "delivery",
         typeOptions: {
           expectedTime: "2026-03-15T21:00:00.000Z",
-          address: "456 Sample Avenue",
+          address: crypto.randomUUID(),
         },
       },
     };
