@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import axios from "axios";
 
 const clientId = import.meta.env.VITE_FUDO_CLIENT_ID;
@@ -56,6 +56,11 @@ api.interceptors.request.use(async (config) => {
 });
 
 const products = ref([]);
+const isLoading = ref(false);
+const loadError = ref("");
+const isPlacingOrder = ref(false);
+const orderError = ref("");
+const orderSuccess = ref(false);
 
 const pickRandomProducts = (list, count) => {
   const pool = Array.isArray(list) ? [...list] : [];
@@ -67,6 +72,8 @@ const pickRandomProducts = (list, count) => {
 };
 
 const fetchProducts = async () => {
+  isLoading.value = true;
+  loadError.value = "";
   try {
     const { data } = await api.get("/products");
     const selectedProducts = pickRandomProducts(data?.products ?? [], 3);
@@ -81,10 +88,24 @@ const fetchProducts = async () => {
     }));
   } catch (error) {
     console.error("Failed to fetch products:", error);
+    loadError.value = "Unable to load products. Please try again.";
+  } finally {
+    isLoading.value = false;
   }
 };
 
+const itemsTotal = computed(() =>
+  products.value.reduce((sum, item) => sum + item.price * item.quantity, 0)
+);
+
 const createOrder = async () => {
+  if (products.value.length === 0) {
+    orderError.value = "Add at least one item before placing the order.";
+    return null;
+  }
+  isPlacingOrder.value = true;
+  orderError.value = "";
+  orderSuccess.value = false;
   try {
     const payload = {
       order: {
@@ -105,10 +126,7 @@ const createOrder = async () => {
           paymentMethod: {
             id: 3,
           },
-          total: products.value.reduce(
-            (sum, item) => sum + item.price * item.quantity,
-            0
-          ),
+          total: itemsTotal.value,
         },
         shippingCost: 0,
         type: "delivery",
@@ -124,10 +142,14 @@ const createOrder = async () => {
         "content-type": "application/json",
       },
     });
+    orderSuccess.value = true;
     return data;
   } catch (error) {
     console.error("Failed to create order:", error);
+    orderError.value = "Order failed. Please try again.";
     return null;
+  } finally {
+    isPlacingOrder.value = false;
   }
 };
 
@@ -137,9 +159,132 @@ onMounted(async () => {
 </script>
 
 <template>
-  <p>{{ products }}</p>
+  <v-container class="py-6">
+    <v-row>
+      <v-col
+        cols="12"
+        md="8"
+      >
+        <v-card>
+          <v-card-title>Checkout</v-card-title>
+          <v-card-text>
+            <v-alert
+              v-if="loadError"
+              type="error"
+              variant="tonal"
+              class="mb-4"
+            >
+              {{ loadError }}
+            </v-alert>
+
+            <v-progress-linear
+              v-if="isLoading"
+              indeterminate
+              color="primary"
+              class="mb-4"
+            />
+
+            <v-alert
+              v-else-if="products.length === 0"
+              type="info"
+              variant="tonal"
+            >
+              No items in the cart yet.
+            </v-alert>
+
+            <v-list
+              v-else
+              density="compact"
+            >
+              <template
+                v-for="(item, index) in products"
+                :key="item.product.id"
+              >
+                <v-list-item>
+                  <v-list-item-title>{{ item.comment }}</v-list-item-title>
+                  <v-list-item-subtitle>
+                    Product ID: {{ item.product.id }}
+                  </v-list-item-subtitle>
+                  <template #append>
+                    <div class="text-right">
+                      <div class="text-body-2">Qty {{ item.quantity }}</div>
+                      <div class="text-subtitle-2">
+                        ${{ (item.price * item.quantity).toFixed(2) }}
+                      </div>
+                    </div>
+                  </template>
+                </v-list-item>
+                <v-divider v-if="index < products.length - 1" />
+              </template>
+            </v-list>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <v-col
+        cols="12"
+        md="4"
+      >
+        <v-card>
+          <v-card-title>Order Summary</v-card-title>
+          <v-card-text>
+            <v-alert
+              v-if="orderError"
+              type="error"
+              variant="tonal"
+              class="mb-4"
+            >
+              {{ orderError }}
+            </v-alert>
+
+            <v-alert
+              v-if="orderSuccess"
+              type="success"
+              variant="tonal"
+              class="mb-4"
+            >
+              Order created successfully.
+            </v-alert>
+
+            <v-list density="compact">
+              <v-list-item>
+                <v-list-item-title>Items</v-list-item-title>
+                <template #append>
+                  {{ products.length }}
+                </template>
+              </v-list-item>
+              <v-list-item>
+                <v-list-item-title>Subtotal</v-list-item-title>
+                <template #append>
+                  ${{ itemsTotal.toFixed(2) }}
+                </template>
+              </v-list-item>
+              <v-list-item>
+                <v-list-item-title>Shipping</v-list-item-title>
+                <template #append>$0.00</template>
+              </v-list-item>
+              <v-divider />
+              <v-list-item>
+                <v-list-item-title>Total</v-list-item-title>
+                <template #append>
+                  ${{ itemsTotal.toFixed(2) }}
+                </template>
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+          <v-card-actions>
+            <v-btn
+              color="primary"
+              block
+              :loading="isPlacingOrder"
+              :disabled="isLoading || products.length === 0"
+              @click="createOrder"
+            >
+              Place Order
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
-
-<style scoped>
-
-</style>
