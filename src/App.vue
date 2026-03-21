@@ -2,5 +2,5 @@
 </script>
 
 <template>
-  <p>Lorem ipsum dolor.</p>
+  <router-view />
 </template>
